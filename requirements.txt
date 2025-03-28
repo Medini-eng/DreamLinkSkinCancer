@@ -1,0 +1,16 @@
+streamlit
+firebase-admin
+pygments==2.19.1
+markdown-it-py==3.0.0
+mdurl==0.1.2
+rich==13.9.4
+numpy
+#opencv-contrib-python-headless
+opencv-python-headless
+torch
+Pillow
+ultralytics
+firebase-admin
+torchvision
+
+
