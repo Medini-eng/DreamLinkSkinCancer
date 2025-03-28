@@ -10,40 +10,33 @@ from firebase_admin import credentials, db, storage
 import tempfile
 from ultralytics import YOLO
 
-# ✅ Load Firebase Secrets from Streamlit
-try:
-    firebase_secrets_dict = dict(st.secrets["firebase"])  # ✅ FIXED HERE!
-except Exception as e:
-    st.error(f"❌ Error loading Firebase secrets: {e}")
-    st.stop()
+import streamlit as st
+import firebase_admin
+from firebase_admin import credentials, storage
 
-# ✅ Ensure private key formatting
-if "private_key" in firebase_secrets_dict:
-    firebase_secrets_dict["private_key"] = firebase_secrets_dict["private_key"].replace("\\n", "\n")
+# Load Firebase credentials from Streamlit secrets
+firebase_config = st.secrets["firebase"]
 
-# ✅ Write the credentials to a temporary JSON file
-try:
-    with tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".json") as temp_file:
-        json.dump(firebase_secrets_dict, temp_file, indent=4)
-        temp_filename = temp_file.name
-except Exception as e:
-    st.error(f"❌ Error writing temporary Firebase credentials file: {e}")
-    st.stop()
+# Convert Streamlit secrets to a Firebase credentials object
+cred = credentials.Certificate({
+    "type": firebase_config["type"],
+    "project_id": firebase_config["project_id"],
+    "private_key_id": firebase_config["private_key_id"],
+    "private_key": firebase_config["private_key"].replace('\\n', '\n'),  # Fix newlines
+    "client_email": firebase_config["client_email"],
+    "client_id": firebase_config["client_id"],
+    "auth_uri": firebase_config["auth_uri"],
+    "token_uri": firebase_config["token_uri"],
+    "auth_provider_x509_cert_url": firebase_config["auth_provider_x509_cert_url"],
+    "client_x509_cert_url": firebase_config["client_x509_cert_url"],
+    "universe_domain": firebase_config["universe_domain"],
+})
 
-# ✅ Initialize Firebase (Only if not already initialized)
+# Initialize Firebase app
 if not firebase_admin._apps:
-    try:
-        cred = credentials.Certificate(temp_filename)
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': firebase_secrets_dict.get("databaseURL", ""),
-            'storageBucket': f"{firebase_secrets_dict['project_id']}.appspot.com"
-        })
-    except Exception as e:
-        st.error(f"❌ Firebase initialization failed: {e}")
-        st.stop()
-    finally:
-        os.remove(temp_filename)  # ✅ Delete temp file
-
+    firebase_admin.initialize_app(cred, {
+        "storageBucket": f"{firebase_config['project_id']}.appspot.com"
+    })
 
 # ✅ Cache the YOLO model for performance
 @st.cache_resource
